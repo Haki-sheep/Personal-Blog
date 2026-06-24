@@ -19,7 +19,7 @@ SortBy              = "default"
 
 [sidebar]
     emoji    = "😋"
-    subtitle = "HakiSheep Personal Blog"
+    subtitle = "HakiSheep 个人博客"
     avatar   = "img/avatar.png"
 
 [article]
@@ -29,14 +29,12 @@ SortBy              = "default"
 
     [article.license]
         enabled = true
-        default = "Licensed under CC BY-NC-SA 4.0"
+        default = "采用 CC BY-NC-SA 4.0 许可"
 
 [widgets]
     homepage = [
         { type = "search" },
-        { type = "archives", params = { limit = 5 } },
-        { type = "categories", params = { limit = 10 } },
-        { type = "tag-cloud", params = { limit = 10 } },
+        { type = "archives" },
     ]
     page = [{ type = "toc" }]
 

@@ -1,11 +1,58 @@
 # Configure main menu and social menu
-#[[main]]
-#identifier = "home"
-#name = "Home"
-#url = "/"
-#[main.params]
-#icon = "home"
-#newtab = true
+
+[[main]]
+    identifier = "csharp"
+    name       = "C#"
+    url        = "/categories/csharp/"
+    weight     = 1
+
+    [main.params]
+        icon = "hash"
+
+[[main]]
+    identifier = "cpp"
+    name       = "C++"
+    url        = "/categories/cpp/"
+    weight     = 2
+
+    [main.params]
+        icon = "hash"
+
+[[main]]
+    identifier = "unity"
+    name       = "Unity"
+    url        = "/categories/unity/"
+    weight     = 3
+
+    [main.params]
+        icon = "hash"
+
+[[main]]
+    identifier = "ue"
+    name       = "UE"
+    url        = "/categories/ue/"
+    weight     = 4
+
+    [main.params]
+        icon = "hash"
+
+[[main]]
+    identifier = "opengl"
+    name       = "OpenGL"
+    url        = "/categories/opengl/"
+    weight     = 5
+
+    [main.params]
+        icon = "hash"
+
+[[main]]
+    identifier = "math"
+    name       = "Math"
+    url        = "/categories/math/"
+    weight     = 6
+
+    [main.params]
+        icon = "hash"
 
 [[social]]
     identifier = "github"
@@ -16,7 +63,7 @@
         icon = "brand-github"
 
 [[social]]
-    identifier = "B站"
+    identifier = "bilibili"
     name       = "B站"
     url        = "https://space.bilibili.com/83494078?spm_id_from=333.788.0.0"
 
