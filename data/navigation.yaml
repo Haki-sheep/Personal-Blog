@@ -1,0 +1,28 @@
+items:
+  - name: 首页
+    url: /
+    icon: home
+
+  - name: 我的技能树
+    type: group
+    children:
+      - name: C#
+        url: /categories/csharp/
+      - name: C++
+        url: /categories/cpp/
+      - name: Unity
+        url: /categories/unity/
+      - name: UE
+        url: /categories/ue/
+      - name: OpenGL
+        url: /categories/opengl/
+      - name: Math
+        url: /categories/math/
+      - name: DSA
+        url: /categories/dsa/
+      - name: Tools
+        url: /categories/tools/
+
+  - name: 全部文章导览
+    url: /archives/
+    icon: archives

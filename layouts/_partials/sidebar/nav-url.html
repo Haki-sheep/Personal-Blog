@@ -1,0 +1,6 @@
+{{- $path := . -}}
+{{- if eq $path "/" -}}
+    {{- site.Home.RelPermalink -}}
+{{- else -}}
+    {{- urls.JoinPath site.Home.RelPermalink (strings.TrimPrefix "/" $path) -}}
+{{- end -}}

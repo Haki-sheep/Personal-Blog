@@ -49,39 +49,45 @@
         </ol>
     {{- end -}}
 
-    <ol class="menu" id="main-menu">
+    <ol class="menu site-navigation" id="main-menu">
         {{ $currentPage := . }}
-        {{- range .Site.Menus.main.ByWeight -}}
-            {{- if not .Parent -}}
-                {{- if .HasChildren -}}
-                    {{- $groupActive := false -}}
-                    {{- range .Children -}}
-                        {{- if or (eq $currentPage.RelPermalink .URL) ($currentPage.IsMenuCurrent "main" .) -}}
-                            {{- $groupActive = true -}}
-                        {{- end -}}
+        {{- range site.Data.navigation.items -}}
+            {{- if eq .type "group" -}}
+                {{- $groupActive := false -}}
+                {{- range .children -}}
+                    {{- $childURL := partial "sidebar/nav-url" .url -}}
+                    {{- if or (eq $currentPage.RelPermalink $childURL) (hasPrefix $currentPage.RelPermalink $childURL) -}}
+                        {{- $groupActive = true -}}
                     {{- end -}}
-                    <li class="menu-group{{ if $groupActive }} is-active{{ end }}">
-                        <span class="menu-group-label">{{ .Name }}</span>
-                        <ol class="menu-submenu">
-                            {{- range .Children.ByWeight -}}
-                                {{- $active := or (eq $currentPage.RelPermalink .URL) ($currentPage.IsMenuCurrent "main" .) -}}
-                                <li{{ if $active }} class="current"{{ end }}>
-                                    <a href="{{ .URL }}"><span>{{ .Name }}</span></a>
-                                </li>
-                            {{- end -}}
-                        </ol>
-                    </li>
-                {{- else -}}
-                    {{- $active := or (eq $currentPage.RelPermalink .URL) ($currentPage.IsMenuCurrent "main" .) -}}
-                    <li{{ if $active }} class="current"{{ end }}>
-                        <a href="{{ .URL }}" {{ if .Params.newTab }}target="_blank"{{ end }}>
-                            {{ with .Params.Icon }}
-                                {{ partial "helper/icon" . }}
-                            {{ end }}
-                            <span>{{ .Name }}</span>
-                        </a>
-                    </li>
                 {{- end -}}
+                <li class="menu-group{{ if $groupActive }} is-active{{ end }}">
+                    <span class="menu-group-label">{{ .name }}</span>
+                    <ol class="menu-submenu">
+                        {{- range .children -}}
+                            {{- $childURL := partial "sidebar/nav-url" .url -}}
+                            {{- $active := or (eq $currentPage.RelPermalink $childURL) (hasPrefix $currentPage.RelPermalink $childURL) -}}
+                            <li{{ if $active }} class="current"{{ end }}>
+                                <a href="{{ $childURL }}"><span>{{ .name }}</span></a>
+                            </li>
+                        {{- end -}}
+                    </ol>
+                </li>
+            {{- else -}}
+                {{- $itemURL := partial "sidebar/nav-url" .url -}}
+                {{- $active := false -}}
+                {{- if eq .url "/" -}}
+                    {{- $active = $currentPage.IsHome -}}
+                {{- else -}}
+                    {{- $active = or (eq $currentPage.RelPermalink $itemURL) (hasPrefix $currentPage.RelPermalink $itemURL) -}}
+                {{- end -}}
+                <li{{ if $active }} class="current"{{ end }}>
+                    <a href="{{ $itemURL }}">
+                        {{ with .icon }}
+                            {{ partial "helper/icon" . }}
+                        {{ end }}
+                        <span>{{ .name }}</span>
+                    </a>
+                </li>
             {{- end -}}
         {{- end -}}
         <li class="menu-bottom-section">
