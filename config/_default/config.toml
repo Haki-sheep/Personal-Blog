@@ -5,7 +5,7 @@ title   = "HakiSheep"
 
 # Theme i18n support
 # See all available values at https://github.com/CaiJimmy/hugo-theme-stack/tree/master/i18n
-defaultContentLanguage = "en"
+defaultContentLanguage = "zh-cn"
 
 # Set hasCJKLanguage to true if DefaultContentLanguage is in [zh-cn ja ko]
 # This will make .Summary and .WordCount behave correctly for CJK languages.
