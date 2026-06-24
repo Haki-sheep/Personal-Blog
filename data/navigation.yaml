@@ -5,6 +5,7 @@ items:
 
   - name: 我的技能树
     type: group
+    icon: categories
     children:
       - name: C#
         url: /categories/csharp/

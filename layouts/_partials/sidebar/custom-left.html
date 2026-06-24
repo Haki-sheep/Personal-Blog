@@ -62,6 +62,9 @@
                 {{- end -}}
                 <li class="menu-group{{ if $groupActive }} is-active is-expanded{{ end }}">
                     <button type="button" class="menu-group-toggle" aria-expanded="{{ if $groupActive }}true{{ else }}false{{ end }}">
+                        {{ with .icon }}
+                            {{ partial "helper/icon" . }}
+                        {{ end }}
                         <span class="menu-group-label">{{ .name }}</span>
                         <span class="menu-group-arrow">▸</span>
                     </button>
