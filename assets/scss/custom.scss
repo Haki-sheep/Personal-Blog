@@ -124,8 +124,6 @@
 
 /* 全站动画优化 */
 @media (prefers-reduced-motion: no-preference) {
-    .menu a,
-    .menu-social a,
     .article-list article,
     .article-content,
     .widget,
@@ -138,8 +136,8 @@
         box-shadow: var(--shadow-l2);
     }
 
-    .menu a:hover {
-        transform: translateX(4px);
+    .menu-social a {
+        transition: transform 0.25s ease;
     }
 
     .menu-social a:hover {
@@ -184,23 +182,52 @@
 }
 
 /* 左侧分级菜单 */
-#main-menu {
+#main-menu.site-navigation {
+    overflow-x: hidden;
+    overflow-y: auto;
+
     .menu-group {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 4px;
         width: 100%;
 
-        .menu-group-label {
-            display: block;
-            font-size: 1.35rem;
-            font-weight: 700;
+        .menu-group-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 6px 0;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            text-align: left;
             color: var(--body-text-color);
-            padding: 4px 0;
         }
 
-        &.is-active > .menu-group-label {
+        .menu-group-arrow {
+            display: inline-block;
+            font-size: 1.2rem;
+            color: var(--card-text-color-tertiary);
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        &.is-expanded .menu-group-arrow {
+            transform: rotate(90deg);
+        }
+
+        .menu-group-label {
+            font-size: 1.35rem;
+            font-weight: 700;
+        }
+
+        &.is-active > .menu-group-toggle .menu-group-label {
             color: var(--accent-color);
+        }
+
+        &:not(.is-expanded) .menu-submenu {
+            display: none;
         }
     }
 
@@ -211,14 +238,14 @@
         border-left: 2px solid var(--card-separator-color);
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 4px;
 
         li a {
-            display: flex;
-            align-items: center;
-            padding: 6px 10px;
+            display: block;
+            padding: 8px 10px;
             border-radius: 8px;
             font-size: 1.35rem;
+            font-weight: 500;
             color: var(--body-text-color);
             transition: background-color 0.2s ease, color 0.2s ease;
 
@@ -229,8 +256,18 @@
 
         li.current a {
             color: var(--accent-color);
-            font-weight: 700;
+            font-weight: 600;
             background-color: var(--card-background-selected);
+        }
+    }
+
+    > li > a {
+        display: inline-flex;
+        align-items: center;
+        transition: color 0.2s ease;
+
+        &:hover {
+            transform: none;
         }
     }
 }
@@ -257,18 +294,22 @@
     background-color: var(--card-background);
     box-shadow: var(--shadow-l1);
     border-radius: 10px;
-    transition: color 0.2s ease, box-shadow 0.25s ease, transform 0.2s ease;
+    transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.25s ease;
 
-    &:hover {
-        transform: translateY(-1px);
+    &:hover:not(.is-active) {
         box-shadow: var(--shadow-l2);
     }
 
     &.is-active {
-        color: #fff;
-        background-color: var(--accent-color);
+        color: #1a1a1a;
+        background-color: #f2f2f2;
         box-shadow: var(--shadow-l2);
     }
+}
+
+[data-scheme="light"] .subcategory-tab.is-active {
+    color: #ffffff;
+    background-color: #2b2b2b;
 }
 
 .subcategory-panel {
@@ -423,11 +464,38 @@
     }
 }
 
-/* GIF 背景示例 将 bg.gif 放到 assets/img/ 后取消注释
-body {
-    background-image: url("/img/bg.gif");
+/* 首页 GIF 背景 */
+body.template-home .home-hero {
+    position: relative;
+    min-height: 280px;
+    margin-bottom: 24px;
+    border-radius: 12px;
+    overflow: hidden;
+    background-image: url("../img/home-bg.gif");
     background-size: cover;
-    background-attachment: fixed;
     background-position: center;
+    background-repeat: no-repeat;
+
+    &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.45));
+    }
 }
-*/
+
+body.template-home .home-hero-content {
+    position: relative;
+    z-index: 1;
+    padding: 32px 28px;
+    color: #ffffff;
+
+    h2 {
+        color: #ffffff;
+    }
+
+    a {
+        color: #ffffff;
+        text-decoration: underline;
+    }
+}

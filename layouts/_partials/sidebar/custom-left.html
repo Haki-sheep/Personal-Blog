@@ -60,8 +60,11 @@
                         {{- $groupActive = true -}}
                     {{- end -}}
                 {{- end -}}
-                <li class="menu-group{{ if $groupActive }} is-active{{ end }}">
-                    <span class="menu-group-label">{{ .name }}</span>
+                <li class="menu-group{{ if $groupActive }} is-active is-expanded{{ end }}">
+                    <button type="button" class="menu-group-toggle" aria-expanded="{{ if $groupActive }}true{{ else }}false{{ end }}">
+                        <span class="menu-group-arrow">▸</span>
+                        <span class="menu-group-label">{{ .name }}</span>
+                    </button>
                     <ol class="menu-submenu">
                         {{- range .children -}}
                             {{- $childURL := partial "sidebar/nav-url" .url -}}

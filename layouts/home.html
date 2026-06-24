@@ -1,0 +1,22 @@
+{{ define "body-class" }}template-home{{ end }}
+{{ define "main" }}
+    <div class="home-hero">
+        <div class="home-hero-content">
+            {{ .Content }}
+        </div>
+    </div>
+
+    {{- $paginator := partial "helper/paginator.html" . -}}
+    <section class="article-list">
+        {{ range $paginator.Pages }}
+            {{ partial "article-list/default" . }}
+        {{ end }}
+    </section>
+
+    {{- partial "pagination.html" . -}}
+    {{- partial "footer/footer" . -}}
+{{ end }}
+
+{{ define "right-sidebar" }}
+    {{ partial "sidebar/right.html" (dict "Context" . "Scope" "homepage") }}
+{{ end }}
