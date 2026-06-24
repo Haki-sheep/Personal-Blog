@@ -185,45 +185,55 @@
 #main-menu.site-navigation {
     overflow-x: hidden;
     overflow-y: auto;
+    align-items: stretch;
+
+    li span {
+        flex: initial;
+    }
+
+    > li > a,
+    .menu-group-toggle {
+        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--menu-icon-separation);
+        color: var(--body-text-color);
+        min-height: 28px;
+    }
 
     .menu-group {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
+        display: block;
         width: 100%;
 
         .menu-group-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-            padding: 6px 0;
+            padding: 0;
             border: 0;
             background: transparent;
             cursor: pointer;
             text-align: left;
-            color: var(--body-text-color);
+        }
+
+        .menu-group-label {
+            flex: 1;
+            font-size: 1.4rem;
+            font-weight: 400;
         }
 
         .menu-group-arrow {
-            display: inline-block;
+            flex: 0 0 auto;
+            margin-left: auto;
             font-size: 1.2rem;
             color: var(--card-text-color-tertiary);
             transition: transform 0.2s ease;
-            flex-shrink: 0;
         }
 
         &.is-expanded .menu-group-arrow {
             transform: rotate(90deg);
         }
 
-        .menu-group-label {
-            font-size: 1.35rem;
-            font-weight: 700;
-        }
-
-        &.is-active > .menu-group-toggle .menu-group-label {
+        &.is-active .menu-group-label {
             color: var(--accent-color);
+            font-weight: 700;
         }
 
         &:not(.is-expanded) .menu-submenu {
@@ -233,16 +243,15 @@
 
     .menu-submenu {
         list-style: none;
-        margin: 0;
+        margin: 6px 0 0;
         padding: 0 0 0 14px;
         border-left: 2px solid var(--card-separator-color);
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
 
         li a {
-            display: block;
-            padding: 8px 10px;
+            display: inline-flex;
+            align-items: center;
+            width: 100%;
+            padding: 6px 10px;
             border-radius: 8px;
             font-size: 1.35rem;
             font-weight: 500;
@@ -261,14 +270,8 @@
         }
     }
 
-    > li > a {
-        display: inline-flex;
-        align-items: center;
-        transition: color 0.2s ease;
-
-        &:hover {
-            transform: none;
-        }
+    > li > a:hover {
+        transform: none;
     }
 }
 
@@ -465,37 +468,19 @@
 }
 
 /* 首页 GIF 背景 */
+body.template-home .main.full-width {
+    display: flex;
+    flex-direction: column;
+}
+
 body.template-home .home-hero {
-    position: relative;
-    min-height: 280px;
-    margin-bottom: 24px;
+    flex: 1;
+    width: 100%;
+    min-height: 72vh;
     border-radius: 12px;
     overflow: hidden;
     background-image: url("../img/home-bg.gif");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-
-    &::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.45));
-    }
-}
-
-body.template-home .home-hero-content {
-    position: relative;
-    z-index: 1;
-    padding: 32px 28px;
-    color: #ffffff;
-
-    h2 {
-        color: #ffffff;
-    }
-
-    a {
-        color: #ffffff;
-        text-decoration: underline;
-    }
 }
