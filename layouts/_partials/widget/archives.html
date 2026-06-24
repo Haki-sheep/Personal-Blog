@@ -1,0 +1,35 @@
+{{- $context := .Context -}}
+<section class="widget archives archives-monthly">
+    <div class="widget-icon">
+        {{ partial "helper/icon" "infinity" }}
+    </div>
+    <h2 class="widget-title section-title">{{ T "widget.archives.title" }}</h2>
+
+    {{- $pages := partial "helper/pages.html" $context.Site.Home -}}
+    {{- $years := $pages.GroupByDate "2006" -}}
+
+    <div class="widget-archive--list">
+        {{- range $years | collections.Reverse -}}
+            <div class="archives-year-block">
+                <div class="archives-year-header">
+                    <span class="year">{{ .Key }}</span>
+                    <span class="count">{{ len .Pages }}</span>
+                </div>
+
+                {{- range (.Pages.GroupByDate "01") | collections.Reverse -}}
+                    <details class="archives-month">
+                        <summary>
+                            <span class="month">{{ int .Key }}月</span>
+                            <span class="count">{{ len .Pages }}</span>
+                        </summary>
+                        <ul class="archives-post-list">
+                            {{- range .Pages -}}
+                                <li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>
+                            {{- end -}}
+                        </ul>
+                    </details>
+                {{- end -}}
+            </div>
+        {{- end -}}
+    </div>
+</section>
