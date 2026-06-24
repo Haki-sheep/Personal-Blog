@@ -13,29 +13,46 @@
     </header>
 
     {{- $groups := .Params.subcategoryGroups | default (slice "basic" "advanced") -}}
-    {{- range $groups -}}
-        {{- $slug := . -}}
-        {{- $pages := where $.Pages "Params.subcategories" "intersect" (slice $slug) -}}
-        <section class="category-subsection" id="subcategory-{{ $slug }}">
-            <h2 class="section-title category-subsection-title">{{ T (printf "subcategory.%s" $slug) }}</h2>
-            {{- if gt (len $pages) 0 -}}
-                <div class="article-list--compact">
-                    {{- range $pages -}}
-                        {{ partial "article-list/compact" . }}
-                    {{- end -}}
-                </div>
-            {{- else -}}
-                <p class="category-subsection-empty">{{ T "subcategory.empty" }}</p>
+    <div class="subcategory-switcher">
+        <div class="subcategory-tabs" role="tablist">
+            {{- range $index, $slug := $groups -}}
+                <button
+                    type="button"
+                    class="subcategory-tab{{ if eq $index 0 }} is-active{{ end }}"
+                    data-panel="subcategory-{{ $slug }}"
+                    role="tab"
+                    aria-selected="{{ if eq $index 0 }}true{{ else }}false{{ end }}"
+                >
+                    {{ T (printf "subcategory.%s" $slug) }}
+                </button>
             {{- end -}}
-        </section>
-    {{- end -}}
+        </div>
 
-    {{- $grouped := .Params.subcategoryGroups | default (slice "basic" "advanced") -}}
+        {{- range $index, $slug := $groups -}}
+            {{- $pages := where $.Pages "Params.subcategories" "intersect" (slice $slug) -}}
+            <div
+                class="subcategory-panel{{ if eq $index 0 }} is-active{{ end }}"
+                id="subcategory-{{ $slug }}"
+                role="tabpanel"
+            >
+                {{- if gt (len $pages) 0 -}}
+                    <div class="article-list--compact">
+                        {{- range $pages -}}
+                            {{ partial "article-list/compact" . }}
+                        {{- end -}}
+                    </div>
+                {{- else -}}
+                    <p class="category-subsection-empty">{{ T "subcategory.empty" }}</p>
+                {{- end -}}
+            </div>
+        {{- end -}}
+    </div>
+
     {{- $ungrouped := slice -}}
     {{- range $.Pages -}}
         {{- $page := . -}}
         {{- $matched := false -}}
-        {{- range $grouped -}}
+        {{- range $groups -}}
             {{- if in $page.Params.subcategories . -}}
                 {{- $matched = true -}}
             {{- end -}}
@@ -45,7 +62,7 @@
         {{- end -}}
     {{- end -}}
     {{- if gt (len $ungrouped) 0 -}}
-        <section class="category-subsection" id="subcategory-uncategorized">
+        <section class="category-subsection category-subsection--uncategorized">
             <h2 class="section-title category-subsection-title">{{ T "subcategory.uncategorized" }}</h2>
             <div class="article-list--compact">
                 {{- range $ungrouped -}}

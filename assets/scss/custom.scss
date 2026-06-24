@@ -183,6 +183,119 @@
     }
 }
 
+/* 左侧分级菜单 */
+#main-menu {
+    .menu-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+
+        .menu-group-label {
+            display: block;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--body-text-color);
+            padding: 4px 0;
+        }
+
+        &.is-active > .menu-group-label {
+            color: var(--accent-color);
+        }
+    }
+
+    .menu-submenu {
+        list-style: none;
+        margin: 0;
+        padding: 0 0 0 14px;
+        border-left: 2px solid var(--card-separator-color);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        li a {
+            display: flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 1.35rem;
+            color: var(--body-text-color);
+            transition: background-color 0.2s ease, color 0.2s ease;
+
+            &:hover {
+                background-color: var(--card-background-selected);
+            }
+        }
+
+        li.current a {
+            color: var(--accent-color);
+            font-weight: 700;
+            background-color: var(--card-background-selected);
+        }
+    }
+}
+
+/* 分类页 基础/进阶 并排按钮 */
+.subcategory-switcher {
+    margin-top: 20px;
+}
+
+.subcategory-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.subcategory-tab {
+    flex: 1;
+    border: 0;
+    cursor: pointer;
+    padding: 12px 16px;
+    font-size: 1.45rem;
+    font-weight: 600;
+    color: var(--card-text-color-secondary);
+    background-color: var(--card-background);
+    box-shadow: var(--shadow-l1);
+    border-radius: 10px;
+    transition: color 0.2s ease, box-shadow 0.25s ease, transform 0.2s ease;
+
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-l2);
+    }
+
+    &.is-active {
+        color: #fff;
+        background-color: var(--accent-color);
+        box-shadow: var(--shadow-l2);
+    }
+}
+
+.subcategory-panel {
+    display: none;
+
+    &.is-active {
+        display: block;
+        animation: subcategory-panel-in 0.25s ease;
+    }
+}
+
+@keyframes subcategory-panel-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.category-subsection--uncategorized {
+    margin-top: 28px;
+}
+
 /* 分类页子分区 */
 .category-subsection {
     margin-top: 28px;
