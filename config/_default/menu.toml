@@ -1,6 +1,15 @@
 # Configure main menu and social menu
 
 [[main]]
+    identifier = "home"
+    name       = "Home"
+    url        = "/"
+    weight     = 0
+
+    [main.params]
+        icon = "home"
+
+[[main]]
     identifier = "csharp"
     name       = "C#"
     url        = "/categories/csharp/"
@@ -53,6 +62,24 @@
 
     [main.params]
         icon = "hash"
+
+[[main]]
+    identifier = "dsa"
+    name       = "DSA"
+    url        = "/categories/dsa/"
+    weight     = 7
+
+    [main.params]
+        icon = "hash"
+
+[[main]]
+    identifier = "all-posts"
+    name       = "全部文章"
+    url        = "/archives/"
+    weight     = 8
+
+    [main.params]
+        icon = "archives"
 
 [[social]]
     identifier = "github"

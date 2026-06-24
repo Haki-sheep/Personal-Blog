@@ -1,0 +1,49 @@
+{{ define "body-class" }}template-archives{{ end }}
+{{ define "main" }}
+    <header>
+        <h1 class="section-title">{{ .Title }}</h1>
+        <p class="archives-intro">{{ T "archives.intro" }}</p>
+    </header>
+
+    {{- $pages := partial "helper/pages.html" .Site.Home -}}
+
+    <section class="archives-title-index">
+        <h2 class="section-title">{{ T "archives.allTitles" }}</h2>
+        <ul class="archives-flat-list">
+            {{- range $pages -}}
+                <li>
+                    <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+                    <span class="archives-flat-date">{{ .Date.Format "2006-01-02" }}</span>
+                </li>
+            {{- end -}}
+        </ul>
+    </section>
+
+    <section class="archives-timeline">
+        <h2 class="section-title">{{ T "archives.timeline" }}</h2>
+        {{- range $pages.GroupByDate "2006" | collections.Reverse -}}
+            <div class="archives-group" id="year-{{ .Key }}">
+                <h3 class="archives-date section-title">{{ .Key }}</h3>
+                {{- range (.Pages.GroupByDate "01") | collections.Reverse -}}
+                    <details class="archives-month archives-month--page">
+                        <summary>
+                            <span class="month">{{ int .Key }}月</span>
+                            <span class="count">{{ len .Pages }}</span>
+                        </summary>
+                        <ul class="archives-post-list">
+                            {{- range .Pages -}}
+                                <li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>
+                            {{- end -}}
+                        </ul>
+                    </details>
+                {{- end -}}
+            </div>
+        {{- end -}}
+    </section>
+
+    {{ partialCached "footer/footer" . }}
+{{ end }}
+
+{{ define "right-sidebar" }}
+    {{ partial "sidebar/right.html" (dict "Context" . "Scope" "homepage") }}
+{{ end }}

@@ -76,3 +76,16 @@ darkMode   = "暗色模式"
     jumpToPage = "跳转到页码"
     jump       = "跳转"
     pressEnter = "按 Enter 键跳转"
+
+[subcategory]
+    basic          = "基础"
+    advanced       = "进阶"
+    data-structure = "数据结构"
+    algorithm      = "算法"
+    empty          = "暂无文章"
+    uncategorized  = "未分类"
+
+[archives]
+    intro     = "按标题或时间浏览全部文章 文章较多时建议使用搜索"
+    allTitles = "全部文章标题"
+    timeline  = "时间线归档"

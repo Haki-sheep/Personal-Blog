@@ -1,0 +1,63 @@
+{{ define "main" }}
+    <header>
+        <h3 class="section-title">{{ T "list.section" }}</h3>
+        <div class="section-card">
+            <div class="section-details">
+                <h3 class="section-count">{{ T "list.page" (len .Pages) }}</h3>
+                <h1 class="section-term">{{ .Title }}</h1>
+                {{ with .Params.description }}
+                    <h2 class="section-description">{{ . }}</h2>
+                {{ end }}
+            </div>
+        </div>
+    </header>
+
+    {{- $groups := .Params.subcategoryGroups | default (slice "basic" "advanced") -}}
+    {{- range $groups -}}
+        {{- $slug := . -}}
+        {{- $pages := where $.Pages "Params.subcategories" "intersect" (slice $slug) -}}
+        <section class="category-subsection" id="subcategory-{{ $slug }}">
+            <h2 class="section-title category-subsection-title">{{ T (printf "subcategory.%s" $slug) }}</h2>
+            {{- if gt (len $pages) 0 -}}
+                <div class="article-list--compact">
+                    {{- range $pages -}}
+                        {{ partial "article-list/compact" . }}
+                    {{- end -}}
+                </div>
+            {{- else -}}
+                <p class="category-subsection-empty">{{ T "subcategory.empty" }}</p>
+            {{- end -}}
+        </section>
+    {{- end -}}
+
+    {{- $grouped := .Params.subcategoryGroups | default (slice "basic" "advanced") -}}
+    {{- $ungrouped := slice -}}
+    {{- range $.Pages -}}
+        {{- $page := . -}}
+        {{- $matched := false -}}
+        {{- range $grouped -}}
+            {{- if in $page.Params.subcategories . -}}
+                {{- $matched = true -}}
+            {{- end -}}
+        {{- end -}}
+        {{- if not $matched -}}
+            {{- $ungrouped = $ungrouped | append $page -}}
+        {{- end -}}
+    {{- end -}}
+    {{- if gt (len $ungrouped) 0 -}}
+        <section class="category-subsection" id="subcategory-uncategorized">
+            <h2 class="section-title category-subsection-title">{{ T "subcategory.uncategorized" }}</h2>
+            <div class="article-list--compact">
+                {{- range $ungrouped -}}
+                    {{ partial "article-list/compact" . }}
+                {{- end -}}
+            </div>
+        </section>
+    {{- end -}}
+
+    {{ partialCached "footer/footer" . }}
+{{ end }}
+
+{{ define "right-sidebar" }}
+    {{ partial "sidebar/right.html" (dict "Context" . "Scope" "homepage") }}
+{{ end }}

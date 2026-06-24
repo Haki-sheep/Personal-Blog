@@ -182,3 +182,139 @@
         transform: translateY(0);
     }
 }
+
+/* 分类页子分区 */
+.category-subsection {
+    margin-top: 28px;
+
+    .category-subsection-title {
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--card-separator-color);
+    }
+
+    .category-subsection-empty {
+        margin: 0;
+        padding: 16px 20px;
+        color: var(--card-text-color-tertiary);
+        font-size: 1.4rem;
+        @include card-style;
+    }
+}
+
+/* 全部文章页 */
+.archives-intro {
+    margin: 8px 0 24px;
+    color: var(--card-text-color-secondary);
+    font-size: 1.45rem;
+}
+
+.archives-title-index,
+.archives-timeline {
+    margin-bottom: 36px;
+}
+
+.archives-flat-list {
+    @include card-style;
+    margin: 0;
+    padding: 8px 0;
+    list-style: none;
+    max-height: 420px;
+    overflow-y: auto;
+
+    li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 20px;
+        border-bottom: 1px solid var(--card-separator-color);
+
+        &:last-child {
+            border-bottom: 0;
+        }
+
+        a {
+            flex: 1;
+            font-size: 1.4rem;
+            color: var(--card-text-color-main);
+
+            &:hover {
+                color: var(--accent-color);
+            }
+        }
+    }
+
+    .archives-flat-date {
+        flex-shrink: 0;
+        font-size: 1.25rem;
+        color: var(--card-text-color-tertiary);
+    }
+}
+
+.archives-timeline {
+    .archives-group {
+        margin-bottom: 20px;
+    }
+
+    .archives-month--page {
+        @include card-style;
+        margin-bottom: 10px;
+        overflow: hidden;
+
+        summary {
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            cursor: pointer;
+            list-style: none;
+
+            &::-webkit-details-marker {
+                display: none;
+            }
+
+            &::before {
+                content: "▸";
+                margin-right: 10px;
+                color: var(--card-text-color-tertiary);
+                transition: transform 0.25s ease;
+            }
+
+            .month {
+                flex: 1;
+                font-size: 1.4rem;
+            }
+
+            .count {
+                color: var(--card-text-color-tertiary);
+            }
+        }
+
+        &[open] summary::before {
+            transform: rotate(90deg);
+        }
+
+        .archives-post-list {
+            margin: 0;
+            padding: 0 20px 12px 36px;
+            list-style: none;
+
+            a {
+                font-size: 1.35rem;
+                color: var(--card-text-color-secondary);
+
+                &:hover {
+                    color: var(--accent-color);
+                }
+            }
+        }
+    }
+}
+
+/* GIF 背景示例 将 bg.gif 放到 assets/img/ 后取消注释
+body {
+    background-image: url("/img/bg.gif");
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+}
+*/
