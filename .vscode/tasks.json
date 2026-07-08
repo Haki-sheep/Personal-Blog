@@ -23,6 +23,15 @@
                 "isDefault": true
             },
             "problemMatcher": []
+        },
+        {
+            "label": "Publish Obsidian Article",
+            "type": "shell",
+            "command": "python tools/publish_ui.py",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
         }
     ]
 }
