@@ -193,15 +193,54 @@ def sanitize_image_name(filename: str) -> str:
     return f"{safe_stem or 'image'}{suffix}"
 
 
-def convert_obsidian_images(body: str) -> tuple[str, dict[str, str]]:
-    """返回转换后正文 以及 源文件名 -> 安全文件名 映射"""
-    rename_map: dict[str, str] = {}
+def normalize_image_ref(raw: str) -> str:
+    name = raw.strip().strip('"').strip("'")
+    if name.startswith("<") and name.endswith(">"):
+        name = name[1:-1].strip()
+    return Path(name).name
 
-    def replace(match: re.Match[str]) -> str:
-        filename = match.group(1).strip()
+
+def collect_note_image_refs(body: str) -> list[str]:
+    """只从笔记原文收集图片名 以笔记侧为准"""
+    refs: list[str] = []
+    seen: set[str] = set()
+
+    def add(name: str) -> None:
+        key = normalize_image_ref(name)
+        if key and key not in seen:
+            seen.add(key)
+            refs.append(key)
+
+    for match in WIKI_IMAGE_RE.finditer(body):
+        add(match.group(1))
+
+    for match in MARKDOWN_IMAGE_RE.finditer(body):
+        add(match.group(1))
+
+    return refs
+
+
+def resolve_source_image(source_dir: Path, note_name: str) -> Path:
+    """按笔记里的文件名找图 找不到再尝试去空格名"""
+    direct = source_dir / note_name
+    if direct.is_file():
+        return direct
+
+    safe_name = sanitize_image_name(note_name)
+    fallback = source_dir / safe_name
+    if fallback.is_file():
+        return fallback
+
+    raise FileNotFoundError(f"图片不存在: {direct}")
+
+
+def convert_body_images(body: str, rename_map: dict[str, str]) -> str:
+    """把笔记图片语法转成 Hugo Markdown 链接用安全文件名"""
+
+    def replace_wiki(match: re.Match[str]) -> str:
+        filename = normalize_image_ref(match.group(1))
         pipe_value = (match.group(2) or "").strip()
-        safe_name = sanitize_image_name(filename)
-        rename_map[filename] = safe_name
+        safe_name = rename_map[filename]
 
         alt = Path(filename).stem
         if pipe_value and not pipe_value.isdigit():
@@ -209,33 +248,15 @@ def convert_obsidian_images(body: str) -> tuple[str, dict[str, str]]:
 
         return f"![{alt}]({safe_name})"
 
-    converted = WIKI_IMAGE_RE.sub(replace, body)
-    return converted, rename_map
-
-
-def collect_markdown_images(body: str) -> dict[str, str]:
-    """收集 Markdown 图片 源路径 -> 安全文件名"""
-    rename_map: dict[str, str] = {}
-    for match in MARKDOWN_IMAGE_RE.finditer(body):
-        raw = match.group(1).strip().strip('"').strip("'")
-        if raw.startswith("<") and raw.endswith(">"):
-            raw = raw[1:-1].strip()
-        rename_map[raw] = sanitize_image_name(raw)
-    return rename_map
-
-
-def rewrite_markdown_image_links(body: str, rename_map: dict[str, str]) -> str:
-    pattern = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
-
-    def replace_full(match: re.Match[str]) -> str:
+    def replace_md(match: re.Match[str]) -> str:
         alt = match.group(1)
-        raw = match.group(2).strip().strip('"').strip("'")
-        if raw.startswith("<") and raw.endswith(">"):
-            raw = raw[1:-1].strip()
-        safe_name = rename_map.get(raw, sanitize_image_name(raw))
+        filename = normalize_image_ref(match.group(2))
+        safe_name = rename_map.get(filename, sanitize_image_name(filename))
         return f"![{alt}]({safe_name})"
 
-    return pattern.sub(replace_full, body)
+    converted = WIKI_IMAGE_RE.sub(replace_wiki, body)
+    converted = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)").sub(replace_md, converted)
+    return converted
 
 
 def render_hugo_frontmatter(options: PublishOptions) -> str:
@@ -285,32 +306,29 @@ def publish_article(options: PublishOptions) -> PublishResult:
     raw_text = md_path.read_text(encoding="utf-8")
     _, body = parse_frontmatter(raw_text)
 
-    converted_body, wiki_rename_map = convert_obsidian_images(body)
-    md_rename_map = collect_markdown_images(converted_body)
-    rename_map = {**md_rename_map, **wiki_rename_map}
-    converted_body = rewrite_markdown_image_links(converted_body, rename_map)
+    # 先按笔记原文收集图片名 再映射到博客安全名
+    note_images = collect_note_image_refs(body)
+    rename_map = {name: sanitize_image_name(name) for name in note_images}
+    converted_body = convert_body_images(body, rename_map)
 
     dest_dir = options.blog_root / "content" / "post" / options.slug
     dest_dir.mkdir(parents=True, exist_ok=True)
 
     copied_images: list[str] = []
-    for src_name, safe_name in sorted(rename_map.items()):
-        src_image = options.source_dir / src_name
-        if not src_image.is_file():
-            raise FileNotFoundError(f"图片不存在: {src_image}")
-
+    for note_name, safe_name in rename_map.items():
+        src_image = resolve_source_image(options.source_dir, note_name)
         dest_image = dest_dir / safe_name
         shutil.copy2(src_image, dest_image)
         copied_images.append(safe_name)
 
     cover_name = options.cover
     if cover_name:
-        safe_cover = sanitize_image_name(cover_name)
+        note_cover = normalize_image_ref(cover_name)
+        safe_cover = sanitize_image_name(note_cover)
         if safe_cover not in copied_images:
-            cover_src = options.source_dir / cover_name
-            if cover_src.is_file():
-                shutil.copy2(cover_src, dest_dir / safe_cover)
-                copied_images.append(safe_cover)
+            cover_src = resolve_source_image(options.source_dir, note_cover)
+            shutil.copy2(cover_src, dest_dir / safe_cover)
+            copied_images.append(safe_cover)
         options.cover = safe_cover
 
     output = render_hugo_frontmatter(options) + "\n" + converted_body.strip() + "\n"

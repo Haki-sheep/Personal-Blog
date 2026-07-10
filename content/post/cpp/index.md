@@ -1,9 +1,9 @@
 ---
 title: Cpp基础
-date: 2026-07-11T07:00:00+08:00
+date: 2026-07-11T07:39:27+08:00
 slug: cpp
 categories:
-    - cpp
+    - csharp
 subcategories:
     - basic
 ---
@@ -30,7 +30,7 @@ using namespace standWindowTool;
 
 # 1.内存分区
 
-BBS = **Block Started by Symbol** 由符号开始的块
+BSS = **Block Started by Symbol** 由符号开始的块
 **它在可执行文件（如 .exe）中不占用任何磁盘空间**
 程序加载器（Loader）只需要记录 **BSS 段的起始地址和长度**，等程序运行时，再在内存中把这个区域一次性全部抹零（`memset`）
 
