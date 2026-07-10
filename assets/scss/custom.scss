@@ -494,7 +494,7 @@ body.template-home .site-footer {
 
 /* 文章内图片限制宽度 避免 Obsidian 截图撑爆版面 */
 .article-content img {
-    max-width: min(100%, 720px);
+    max-width: 100%;
     height: auto;
     display: block;
     margin: 1.2em auto;
