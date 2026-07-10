@@ -10,18 +10,18 @@ subcategories:
 
 # 0.**编译与链接**
 
-![Pasted image 20260711054734](Pasted image 20260711054734.png)
+![Pasted image 20260711054734](Pasted-image-20260711054734.png)
 
 ## 头文件 = xxx.h 
 声明 告诉别人「有这些函数」
 比如下图
-![Pasted image 20260711062250](Pasted image 20260711062250.png)
+![Pasted image 20260711062250](Pasted-image-20260711062250.png)
 #include "xxx.h" 表示我用到了这个文件里面的东西 到时候编译器过来看一下
 编译器编 `main.cpp` 时 只看声明(xxx.h) 不自动去读 `standWindowTool.cpp`  
 ## 库文件 = xxx.cpp 
 定义和真正写函数体
 比如下图
-![Pasted image 20260711062335](Pasted image 20260711062335.png)
+![Pasted image 20260711062335](Pasted-image-20260711062335.png)
 
 using namespace standWindowTool;
 表示「这个命名空间里的名字可以省略前缀 ] 也就是无需standWindowTool::GtoXY(a,b)了
@@ -34,7 +34,7 @@ BBS = **Block Started by Symbol** 由符号开始的块
 **它在可执行文件（如 .exe）中不占用任何磁盘空间**
 程序加载器（Loader）只需要记录 **BSS 段的起始地址和长度**，等程序运行时，再在内存中把这个区域一次性全部抹零（`memset`）
 
-![Pasted image 20260711052750](Pasted image 20260711052750.png)
+![Pasted image 20260711052750](Pasted-image-20260711052750.png)
 # 2.栈
 
 
@@ -70,9 +70,9 @@ BBS = **Block Started by Symbol** 由符号开始的块
 就是用extern关键字
 举例:
 A.cpp
-![Pasted image 20260711061022](Pasted image 20260711061022.png)
+![Pasted image 20260711061022](Pasted-image-20260711061022.png)
 B.cpp
-![Pasted image 20260711061033](Pasted image 20260711061033.png)
+![Pasted image 20260711061033](Pasted-image-20260711061033.png)
 结果: 10 + 1 = 11
 # 8.弃用
 

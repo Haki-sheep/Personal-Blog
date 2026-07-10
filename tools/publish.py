@@ -180,26 +180,62 @@ def detect_from_source(source_dir: Path) -> dict:
     }
 
 
-def convert_obsidian_images(body: str) -> tuple[str, set[str]]:
-    referenced: set[str] = set()
+def sanitize_image_name(filename: str) -> str:
+    """把空格等不安全字符换成连字符 方便 Markdown 链接"""
+    name = Path(filename).name.strip().strip('"').strip("'")
+    if name.startswith("<") and name.endswith(">"):
+        name = name[1:-1].strip()
+    stem = Path(name).stem
+    suffix = Path(name).suffix
+    safe_stem = re.sub(r"[\s]+", "-", stem)
+    safe_stem = re.sub(r"[^\w\-.]+", "-", safe_stem, flags=re.UNICODE)
+    safe_stem = re.sub(r"-{2,}", "-", safe_stem).strip("-")
+    return f"{safe_stem or 'image'}{suffix}"
+
+
+def convert_obsidian_images(body: str) -> tuple[str, dict[str, str]]:
+    """返回转换后正文 以及 源文件名 -> 安全文件名 映射"""
+    rename_map: dict[str, str] = {}
 
     def replace(match: re.Match[str]) -> str:
         filename = match.group(1).strip()
         pipe_value = (match.group(2) or "").strip()
-        referenced.add(filename)
+        safe_name = sanitize_image_name(filename)
+        rename_map[filename] = safe_name
 
         alt = Path(filename).stem
         if pipe_value and not pipe_value.isdigit():
             alt = pipe_value
 
-        return f"![{alt}]({filename})"
+        return f"![{alt}]({safe_name})"
 
     converted = WIKI_IMAGE_RE.sub(replace, body)
-    return converted, referenced
+    return converted, rename_map
 
 
-def collect_markdown_images(body: str) -> set[str]:
-    return {match.group(1).strip() for match in MARKDOWN_IMAGE_RE.finditer(body)}
+def collect_markdown_images(body: str) -> dict[str, str]:
+    """收集 Markdown 图片 源路径 -> 安全文件名"""
+    rename_map: dict[str, str] = {}
+    for match in MARKDOWN_IMAGE_RE.finditer(body):
+        raw = match.group(1).strip().strip('"').strip("'")
+        if raw.startswith("<") and raw.endswith(">"):
+            raw = raw[1:-1].strip()
+        rename_map[raw] = sanitize_image_name(raw)
+    return rename_map
+
+
+def rewrite_markdown_image_links(body: str, rename_map: dict[str, str]) -> str:
+    pattern = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
+
+    def replace_full(match: re.Match[str]) -> str:
+        alt = match.group(1)
+        raw = match.group(2).strip().strip('"').strip("'")
+        if raw.startswith("<") and raw.endswith(">"):
+            raw = raw[1:-1].strip()
+        safe_name = rename_map.get(raw, sanitize_image_name(raw))
+        return f"![{alt}]({safe_name})"
+
+    return pattern.sub(replace_full, body)
 
 
 def render_hugo_frontmatter(options: PublishOptions) -> str:
@@ -249,28 +285,33 @@ def publish_article(options: PublishOptions) -> PublishResult:
     raw_text = md_path.read_text(encoding="utf-8")
     _, body = parse_frontmatter(raw_text)
 
-    converted_body, wiki_images = convert_obsidian_images(body)
-    markdown_images = collect_markdown_images(converted_body)
-    image_names = sorted(wiki_images | markdown_images)
+    converted_body, wiki_rename_map = convert_obsidian_images(body)
+    md_rename_map = collect_markdown_images(converted_body)
+    rename_map = {**md_rename_map, **wiki_rename_map}
+    converted_body = rewrite_markdown_image_links(converted_body, rename_map)
 
     dest_dir = options.blog_root / "content" / "post" / options.slug
     dest_dir.mkdir(parents=True, exist_ok=True)
 
     copied_images: list[str] = []
-    for image_name in image_names:
-        src_image = options.source_dir / image_name
+    for src_name, safe_name in sorted(rename_map.items()):
+        src_image = options.source_dir / src_name
         if not src_image.is_file():
             raise FileNotFoundError(f"图片不存在: {src_image}")
 
-        dest_image = dest_dir / image_name
+        dest_image = dest_dir / safe_name
         shutil.copy2(src_image, dest_image)
-        copied_images.append(image_name)
+        copied_images.append(safe_name)
 
-    if options.cover and options.cover not in copied_images:
-        cover_src = options.source_dir / options.cover
-        if cover_src.is_file():
-            shutil.copy2(cover_src, dest_dir / options.cover)
-            copied_images.append(options.cover)
+    cover_name = options.cover
+    if cover_name:
+        safe_cover = sanitize_image_name(cover_name)
+        if safe_cover not in copied_images:
+            cover_src = options.source_dir / cover_name
+            if cover_src.is_file():
+                shutil.copy2(cover_src, dest_dir / safe_cover)
+                copied_images.append(safe_cover)
+        options.cover = safe_cover
 
     output = render_hugo_frontmatter(options) + "\n" + converted_body.strip() + "\n"
     (dest_dir / "index.md").write_text(output, encoding="utf-8")
