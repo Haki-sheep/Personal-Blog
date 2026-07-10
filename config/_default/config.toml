@@ -2,6 +2,7 @@
 baseurl = "https://haki-sheep.github.io/Personal-Blog/"
 locale  = "zh-cn"
 title   = "HakiSheep"
+timeZone = "Asia/Shanghai"
 
 # Theme i18n support
 # See all available values at https://github.com/CaiJimmy/hugo-theme-stack/tree/master/i18n

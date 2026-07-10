@@ -8,8 +8,15 @@ import re
 import shutil
 import unicodedata
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
+CHINA_TZ = timezone(timedelta(hours=8))
+
+
+def now_china_iso() -> str:
+    now = datetime.now(CHINA_TZ)
+    return now.strftime("%Y-%m-%dT%H:%M:%S") + now.strftime("%z")[:3] + ":" + now.strftime("%z")[3:]
 
 FRONTMATTER_RE = re.compile(r"^---\s*\r?\n(.*?)\r?\n---\s*(?:\r?\n|$)", re.DOTALL)
 WIKI_IMAGE_RE = re.compile(r"!\[\[([^\]|]+)(?:\|([^\]]*))?\]\]")
@@ -158,7 +165,7 @@ def detect_from_source(source_dir: Path) -> dict:
     category = first_value(meta, "category", "categories")
     subcategory = first_value(meta, "subcategory", "subcategories")
     cover = first_value(meta, "cover", "image")
-    post_date = first_value(meta, "date", default=date.today().isoformat())
+    post_date = first_value(meta, "date", default=now_china_iso())
     tags = first_list(meta, "tags")
 
     return {
@@ -206,7 +213,7 @@ def render_hugo_frontmatter(options: PublishOptions) -> str:
     return (
         "---\n"
         f"title: {options.title}\n"
-        f"date: {options.post_date or date.today().isoformat()}\n"
+        f"date: {options.post_date or now_china_iso()}\n"
         f"slug: {options.slug}\n"
         "categories:\n"
         f"    - {options.category}\n"
