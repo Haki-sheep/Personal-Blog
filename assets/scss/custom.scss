@@ -492,10 +492,19 @@ body.template-home .site-footer {
     margin-top: 12px;
 }
 
-/* 文章内图片限制宽度 避免 Obsidian 截图撑爆版面 */
-.article-content img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 1.2em auto;
+/* 文章内图片 可点开放大 默认不撑满整栏 */
+.article-content {
+    img.gallery-image {
+        max-width: 100%;
+        height: auto;
+    }
+
+    figure.gallery-image {
+        max-width: 100%;
+        margin: 1.2em 0;
+
+        figcaption {
+            display: none;
+        }
+    }
 }

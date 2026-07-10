@@ -20,7 +20,7 @@ def now_china_iso() -> str:
 
 FRONTMATTER_RE = re.compile(r"^---\s*\r?\n(.*?)\r?\n---\s*(?:\r?\n|$)", re.DOTALL)
 WIKI_IMAGE_RE = re.compile(r"!\[\[([^\]|]+)(?:\|([^\]]*))?\]\]")
-MARKDOWN_IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
+MARKDOWN_IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+\"([^\"]*)\")?\)")
 
 CATEGORIES = [
     ("csharp", "C#"),
@@ -215,7 +215,7 @@ def collect_note_image_refs(body: str) -> list[str]:
         add(match.group(1))
 
     for match in MARKDOWN_IMAGE_RE.finditer(body):
-        add(match.group(1))
+        add(match.group(2))
 
     return refs
 
@@ -235,41 +235,54 @@ def resolve_source_image(source_dir: Path, note_name: str) -> Path:
 
 
 def convert_body_images(body: str, rename_map: dict[str, str]) -> str:
-    """把笔记图片语法转成 Markdown 图 走主题 gallery 可点击放大"""
+    """转成 Markdown 图 空 alt 无图注 title 放 Obsidian 宽度可点开放大"""
 
     def replace_wiki(match: re.Match[str]) -> str:
         filename = normalize_image_ref(match.group(1))
         pipe_value = (match.group(2) or "").strip()
         safe_name = rename_map[filename]
 
-        alt = Path(filename).stem
-        # Obsidian |数字 是预览宽度 博客交给主题响应式处理
-        if pipe_value and not pipe_value.isdigit():
+        alt = ""
+        width = ""
+        if pipe_value.isdigit():
+            width = pipe_value
+        elif pipe_value:
             alt = pipe_value
 
-        return render_image_tag(safe_name, alt)
+        return render_image_tag(safe_name, alt, width)
 
     def replace_md(match: re.Match[str]) -> str:
         alt = match.group(1)
         filename = normalize_image_ref(match.group(2))
+        title = (match.group(3) or "").strip()
         safe_name = rename_map.get(filename, sanitize_image_name(filename))
-        return render_image_tag(safe_name, alt)
+
+        width = ""
+        # 已是宽度 title 则保留 文件名当 alt 的旧写法清掉图注
+        if title.isdigit():
+            width = title
+            alt = ""
+        elif alt.startswith("Pasted image") or alt.startswith("Pasted-image"):
+            alt = ""
+
+        return render_image_tag(safe_name, alt, width)
 
     converted = WIKI_IMAGE_RE.sub(replace_wiki, body)
-    converted = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)").sub(replace_md, converted)
+    converted = MARKDOWN_IMAGE_RE.sub(replace_md, converted)
     converted = ensure_blank_line_around_images(converted)
     return converted
 
 
-def render_image_tag(src: str, alt: str) -> str:
-    """生成 Markdown 图片 让 Stack 主题 render-image 钩子接管"""
+def render_image_tag(src: str, alt: str = "", width: str = "") -> str:
+    """Markdown 图片 空 alt 无图注 数字 title 给渲染钩子当显示宽度"""
     safe_alt = alt.replace("[", "\\[").replace("]", "\\]")
+    if width:
+        return f'![{safe_alt}]({src} "{width}")'
     return f"![{safe_alt}]({src})"
 
 
 def ensure_blank_line_around_images(body: str) -> str:
     """图片前后补空行 避免标题被吞 也避免和文字粘在一起"""
-    # Markdown 图片独占一行时前后空行
     body = re.sub(
         r"([^\n])\n(!\[[^\]]*\]\([^)]+\))",
         r"\1\n\n\2",
@@ -280,7 +293,6 @@ def ensure_blank_line_around_images(body: str) -> str:
         r"\1\n\n\2",
         body,
     )
-    # 若仍有裸 HTML img 也保证后面空行
     body = re.sub(
         r"(<img\b[^>]*>)\s*\n(?!\n)",
         r"\1\n\n",

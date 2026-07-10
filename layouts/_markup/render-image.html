@@ -1,0 +1,51 @@
+{{- $image := partial "helper/image" (dict "Resources" .Page.Resources "Image" .Destination "Context" .Page) -}}
+{{- $alt := .PlainText | safeHTML -}}
+{{- $rawTitle := .Title -}}
+
+{{/* Obsidian |423 会写成 Markdown title 数字 只控制显示宽度 不当图注 */}}
+{{- $displayWidth := 0 -}}
+{{- if $rawTitle -}}
+    {{- if findRE `^\d+$` $rawTitle -}}
+        {{- $displayWidth = int $rawTitle -}}
+        {{- $rawTitle = "" -}}
+    {{- end -}}
+{{- end -}}
+
+{{- $galleryImage := and $image.Height $image.Width -}}
+
+{{- $attributes := dict -}}
+{{- if $galleryImage -}}
+    {{- $attributes = (dict
+        "data-flex-grow" (div (mul $image.Width 100) $image.Height)
+        "data-flex-basis" (printf "%dpx" (div (mul $image.Width 240) $image.Height))
+    ) -}}
+{{- end -}}
+
+{{- if gt $displayWidth 0 -}}
+    {{- $attributes = merge $attributes (dict
+        "style" (printf "width:%dpx;max-width:100%%;height:auto;" $displayWidth)
+    ) -}}
+{{- end -}}
+
+{{- $imgAttrs := dict
+    "src" $image.Permalink
+    "width" $image.Width
+    "height" $image.Height
+    "alt" $alt
+    "class" (cond $galleryImage "gallery-image" "")
+    "loading" "lazy"
+    "sizes" "(max-width: 767px) calc(100vw - 30px), (max-width: 1023px) 700px, (max-width: 1279px) 950px, 1232px"
+-}}
+
+{{- if $rawTitle -}}
+    {{- $imgAttrs = merge $imgAttrs (dict
+        "title" ($rawTitle | markdownify)
+        "data-title-escaped" ($rawTitle | htmlEscape)
+    ) -}}
+{{- end -}}
+
+{{ partial "helper/responsive-image" (dict
+    "Resource" $image.Resource
+    "Widths" (cond .Page.Site.Params.ImageProcessing.Content.Enabled .Page.Site.Params.ImageProcessing.Content.Widths nil)
+    "Attributes" (merge $attributes $imgAttrs)
+) }}

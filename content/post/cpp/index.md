@@ -1,11 +1,11 @@
 ---
 title: Cpp基础
-date: 2026-07-11T07:54:52+08:00
+date: 2026-07-11T07:58:43+08:00
 slug: cpp
 categories:
     - csharp
 subcategories:
-    - advanced
+    - basic
 ---
 
 # 0.**编译与链接**
