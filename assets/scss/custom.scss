@@ -491,3 +491,11 @@ body.template-home .site-footer {
     flex-shrink: 0;
     margin-top: 12px;
 }
+
+/* 文章内图片限制宽度 避免 Obsidian 截图撑爆版面 */
+.article-content img {
+    max-width: min(100%, 720px);
+    height: auto;
+    display: block;
+    margin: 1.2em auto;
+}

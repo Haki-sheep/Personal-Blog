@@ -27,8 +27,8 @@ class PublishApp:
         self.blog_root = blog_root_from_here()
 
         root.title("Blog 发布工具")
-        root.geometry("760x620")
-        root.minsize(680, 560)
+        root.geometry("760x640")
+        root.minsize(680, 580)
 
         self.source_var = tk.StringVar()
         self.title_var = tk.StringVar()
@@ -39,6 +39,7 @@ class PublishApp:
         self.cover_var = tk.StringVar()
         self.date_var = tk.StringVar()
         self.build_var = tk.BooleanVar(value=True)
+        self.push_var = tk.BooleanVar(value=True)
 
         self._build_layout()
 
@@ -89,6 +90,11 @@ class PublishApp:
         row += 1
 
         ttk.Checkbutton(frame, text="发布后执行 hugo 构建", variable=self.build_var).grid(
+            row=row, column=1, sticky="w", **padding
+        )
+        row += 1
+
+        ttk.Checkbutton(frame, text="发布后推送到 GitHub", variable=self.push_var).grid(
             row=row, column=1, sticky="w", **padding
         )
         row += 1
@@ -201,7 +207,68 @@ class PublishApp:
         if self.build_var.get():
             self.run_hugo()
 
-        messagebox.showinfo("完成", f"文章已发布到:\n{result.dest_dir}")
+        push_ok = True
+        if self.push_var.get():
+            push_ok = self.push_to_github(options.title)
+
+        if push_ok:
+            messagebox.showinfo("完成", f"文章已发布到:\n{result.dest_dir}")
+        else:
+            messagebox.showwarning(
+                "本地已发布",
+                f"文章已写入:\n{result.dest_dir}\n\n但 GitHub 推送失败 请看日志",
+            )
+
+    def run_git(self, args: list[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            args,
+            cwd=str(self.blog_root),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+
+    def push_to_github(self, title: str) -> bool:
+        self.log("开始提交并推送到 GitHub...")
+
+        # 清掉已跟踪的 pycache 避免误提交
+        self.run_git(["git", "rm", "-r", "--cached", "--ignore-unmatch", "tools/__pycache__"])
+
+        status = self.run_git(["git", "status", "--porcelain"])
+        if status.returncode != 0:
+            self.log(f"git status 失败: {status.stderr.strip()}")
+            return False
+
+        if not status.stdout.strip():
+            self.log("没有需要提交的变更 跳过推送")
+            return True
+
+        add = self.run_git(["git", "add", "-A"])
+        if add.returncode != 0:
+            self.log(f"git add 失败: {add.stderr.strip()}")
+            return False
+
+        message = f"发布: {title}" if title.strip() else "发布文章"
+        commit = self.run_git(["git", "commit", "-m", message])
+        if commit.returncode != 0:
+            combined = (commit.stdout + commit.stderr).strip()
+            if "nothing to commit" in combined.lower():
+                self.log("没有需要提交的变更 跳过推送")
+                return True
+            self.log(f"git commit 失败: {combined}")
+            return False
+
+        self.log(f"已提交: {message}")
+
+        push = self.run_git(["git", "push", "origin", "HEAD"])
+        if push.returncode != 0:
+            self.log(f"git push 失败: {(push.stdout + push.stderr).strip()}")
+            return False
+
+        self.log("GitHub 推送成功")
+        return True
 
     def run_hugo(self) -> None:
         try:

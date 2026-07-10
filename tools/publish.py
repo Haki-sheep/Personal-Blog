@@ -235,7 +235,7 @@ def resolve_source_image(source_dir: Path, note_name: str) -> Path:
 
 
 def convert_body_images(body: str, rename_map: dict[str, str]) -> str:
-    """把笔记图片语法转成 Hugo Markdown 链接用安全文件名"""
+    """把笔记图片语法转成带宽度的 HTML 图 保留 Obsidian |宽度"""
 
     def replace_wiki(match: re.Match[str]) -> str:
         filename = normalize_image_ref(match.group(1))
@@ -243,20 +243,31 @@ def convert_body_images(body: str, rename_map: dict[str, str]) -> str:
         safe_name = rename_map[filename]
 
         alt = Path(filename).stem
-        if pipe_value and not pipe_value.isdigit():
+        width = ""
+        if pipe_value.isdigit():
+            width = pipe_value
+        elif pipe_value:
             alt = pipe_value
 
-        return f"![{alt}]({safe_name})"
+        return render_image_tag(safe_name, alt, width)
 
     def replace_md(match: re.Match[str]) -> str:
         alt = match.group(1)
         filename = normalize_image_ref(match.group(2))
         safe_name = rename_map.get(filename, sanitize_image_name(filename))
-        return f"![{alt}]({safe_name})"
+        return render_image_tag(safe_name, alt, "")
 
     converted = WIKI_IMAGE_RE.sub(replace_wiki, body)
     converted = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)").sub(replace_md, converted)
     return converted
+
+
+def render_image_tag(src: str, alt: str, width: str) -> str:
+    """生成图片标签 有宽度用 HTML 无宽度用 Markdown"""
+    safe_alt = alt.replace('"', "&quot;")
+    if width:
+        return f'<img src="{src}" alt="{safe_alt}" width="{width}">'
+    return f"![{alt}]({src})"
 
 
 def render_hugo_frontmatter(options: PublishOptions) -> str:

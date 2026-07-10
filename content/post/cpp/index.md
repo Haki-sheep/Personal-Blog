@@ -1,27 +1,27 @@
 ---
 title: Cpp基础
-date: 2026-07-11T07:41:33+08:00
+date: 2026-07-11T07:46:31+08:00
 slug: cpp
 categories:
-    - cpp
+    - csharp
 subcategories:
     - basic
 ---
 
 # 0.**编译与链接**
 
-![Pasted image 20260711054734](Pasted-image-20260711054734.png)
+<img src="Pasted-image-20260711054734.png" alt="Pasted image 20260711054734" width="423">
 
 ## 头文件 = xxx.h 
 声明 告诉别人「有这些函数」
 比如下图
-![Pasted image 20260711062250](Pasted-image-20260711062250.png)
+<img src="Pasted-image-20260711062250.png" alt="Pasted image 20260711062250" width="270">
 #include "xxx.h" 表示我用到了这个文件里面的东西 到时候编译器过来看一下
 编译器编 `main.cpp` 时 只看声明(xxx.h) 不自动去读 `standWindowTool.cpp`  
 ## 库文件 = xxx.cpp 
 定义和真正写函数体
 比如下图
-![Pasted image 20260711062335](Pasted-image-20260711062335.png)
+<img src="Pasted-image-20260711062335.png" alt="Pasted image 20260711062335" width="317">
 
 using namespace standWindowTool;
 表示「这个命名空间里的名字可以省略前缀 ] 也就是无需standWindowTool::GtoXY(a,b)了
@@ -34,7 +34,7 @@ BSS = **Block Started by Symbol** 由符号开始的块
 **它在可执行文件（如 .exe）中不占用任何磁盘空间**
 程序加载器（Loader）只需要记录 **BSS 段的起始地址和长度**，等程序运行时，再在内存中把这个区域一次性全部抹零（`memset`）
 
-![Pasted image 20260711052750](Pasted-image-20260711052750.png)
+<img src="Pasted-image-20260711052750.png" alt="Pasted image 20260711052750" width="373">
 # 2.栈
 
 
@@ -58,9 +58,9 @@ BSS = **Block Started by Symbol** 由符号开始的块
 就是用extern关键字
 举例:
 A.cpp
-![Pasted image 20260711061022](Pasted-image-20260711061022.png)
+<img src="Pasted-image-20260711061022.png" alt="Pasted image 20260711061022" width="338">
 B.cpp
-![Pasted image 20260711061033](Pasted-image-20260711061033.png)
+<img src="Pasted-image-20260711061033.png" alt="Pasted image 20260711061033" width="272">
 
 结果: 10 + 1 = 11
 # 8.弃用
