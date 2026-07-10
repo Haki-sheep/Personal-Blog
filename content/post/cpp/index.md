@@ -1,9 +1,9 @@
 ---
 title: Cpp基础
-date: 2026-07-11T07:39:27+08:00
+date: 2026-07-11T07:41:33+08:00
 slug: cpp
 categories:
-    - csharp
+    - cpp
 subcategories:
     - basic
 ---
@@ -47,18 +47,6 @@ BSS = **Block Started by Symbol** 由符号开始的块
 静态全局变量 -> 单文件使用 
 静态局部变量 -> 所在局部作用域使用
 
-`#include <iostream>`
-`using namespace std;`
-`// 全局变量`
-`auto a = 10;`
-`// 静态全局变量`
-`static auto b = 20;`
-`int main() {`
-    `// 静态局部变量`
-    `static auto c = 30;`
-    `std::cin.get(); // 等待按回车`
-    `return 0;`
-`}`
 # 5.常量存储区
 
 
@@ -73,6 +61,7 @@ A.cpp
 ![Pasted image 20260711061022](Pasted-image-20260711061022.png)
 B.cpp
 ![Pasted image 20260711061033](Pasted-image-20260711061033.png)
+
 结果: 10 + 1 = 11
 # 8.弃用
 
