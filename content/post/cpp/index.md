@@ -1,6 +1,6 @@
 ---
 title: Cpp基础
-date: 2026-07-11T07:47:32+08:00
+date: 2026-07-11T07:49:28+08:00
 slug: cpp
 categories:
     - csharp
@@ -24,6 +24,7 @@ subcategories:
 <img src="Pasted-image-20260711062335.png" alt="Pasted image 20260711062335" width="317">
 
 using namespace standWindowTool;
+
 表示「这个命名空间里的名字可以省略前缀 ] 也就是无需standWindowTool::GtoXY(a,b)了
 
 链接阶段再把各个 `.cpp` 编出来的目标文件拼在一起
