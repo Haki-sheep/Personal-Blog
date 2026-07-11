@@ -492,19 +492,52 @@ body.template-home .site-footer {
     margin-top: 12px;
 }
 
-/* 文章内图片 可点开放大 默认不撑满整栏 */
+/* 文章内图片 强制左右留白 可点开放大 无图注 */
 .article-content {
-    img.gallery-image {
-        max-width: 100%;
-        height: auto;
+    .gallery {
+        justify-content: center;
+        gap: 12px;
     }
 
     figure.gallery-image {
-        max-width: 100%;
-        margin: 1.2em 0;
+        flex: 0 1 auto !important;
+        width: auto !important;
+        max-width: 520px !important;
+        margin: 1.2em auto !important;
+
+        a.image-link {
+            display: block;
+            max-width: 100%;
+        }
+
+        img.gallery-image {
+            display: block;
+            max-width: 100% !important;
+            height: auto !important;
+            margin: 0 auto;
+        }
 
         figcaption {
             display: none;
+        }
+    }
+
+    /* 还没被 JS 包成 figure 时也先限制 */
+    p > a.image-link,
+    p > img.gallery-image {
+        display: block;
+        max-width: 520px !important;
+        height: auto !important;
+        margin: 1.2em auto !important;
+    }
+}
+
+@media (max-width: 767px) {
+    .article-content {
+        figure.gallery-image,
+        p > a.image-link,
+        p > img.gallery-image {
+            max-width: calc(100% - 48px) !important;
         }
     }
 }
