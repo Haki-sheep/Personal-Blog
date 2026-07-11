@@ -1,6 +1,6 @@
 ---
 title: Cpp基础
-date: 2026-07-11T10:42:30+08:00
+date: 2026-07-11T10:45:59+08:00
 slug: cpp
 categories:
     - csharp
@@ -88,7 +88,9 @@ using namespace standWindowTool;
 
 
 # 7.跨文件
-就是用extern关键字
+## 引入头文件
+这个不必多说,大多数情况下是这么用的
+## extern关键字
 举例:
 A.cpp
 
@@ -99,6 +101,7 @@ B.cpp
 ![](Pasted-image-20260711061033.png "272")
 
 结果: 10 + 1 = 11
+
 # 8.弃用
 
 | 关键字/特性                     | 弃用版本     | 移除版本  | 编译器处理方式                                                                     |
