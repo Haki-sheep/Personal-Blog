@@ -1,6 +1,6 @@
 ---
 title: Cpp基础
-date: 2026-07-11T08:02:47+08:00
+date: 2026-07-11T10:40:30+08:00
 slug: cpp
 categories:
     - csharp
@@ -10,41 +10,69 @@ subcategories:
 
 # 0.**编译与链接**
 
-![Pasted image 20260711054734](Pasted-image-20260711054734.png)
+![](Pasted-image-20260711054734.png "423")
 
 ## 头文件 = xxx.h 
-声明 告诉别人「有这些函数」
+	声明 告诉别人「有这些函数」
 比如下图
 
-![Pasted image 20260711062250](Pasted-image-20260711062250.png)
+![](Pasted-image-20260711062250.png "270")
 
 #include "xxx.h" 表示我用到了这个文件里面的东西 到时候编译器过来看一下
 编译器编 `main.cpp` 时 只看声明(xxx.h) 不自动去读 `standWindowTool.cpp`  
 ## 库文件 = xxx.cpp 
-定义和真正写函数体
+	定义和真正写函数体
 比如下图
 
-![Pasted image 20260711062335](Pasted-image-20260711062335.png)
+![](Pasted-image-20260711062335.png "317")
 
 using namespace standWindowTool;
-
 表示「这个命名空间里的名字可以省略前缀 ] 也就是无需standWindowTool::GtoXY(a,b)了
-
 链接阶段再把各个 `.cpp` 编出来的目标文件拼在一起
 
 # 1.内存分区
 
-BSS = **Block Started by Symbol** 由符号开始的块
-**它在可执行文件（如 .exe）中不占用任何磁盘空间**
-程序加载器（Loader）只需要记录 **BSS 段的起始地址和长度**，等程序运行时，再在内存中把这个区域一次性全部抹零（`memset`）
+	BSS = **Block Started by Symbol** 由符号开始的块
+	**它在可执行文件（如 .exe）中不占用任何磁盘空间**
+	程序加载器（Loader）只需要记录 **BSS 段的起始地址和长度**，等程序运行时，再在内存中把这个区域一次性全部抹零（`memset`）
 
-![Pasted image 20260711052750](Pasted-image-20260711052750.png)
+![](Pasted-image-20260711052750.png "373")
 
 # 2.栈
+	栈的增长方式是通过移动栈指针
+	它必须是一段连续的内存地址（从高地址向低地址增长）
+	Windows 默认栈大小约 1MB , 且每一个程序都有自己独立的栈
 
+![](Pasted-image-20260711103920.png "461")
+
+## **悬挂指针（Dangling Pointer）**
+	指针变量里保存的地址，原来指向的那块内存已经被释放（或回收）了，但这个指针本身还在，变成了“悬在空中”的野指针
+
+![](Pasted-image-20260711094821.png "344")
+
+分析上图:
+执行完 Bad() 会返回出来a的栈地址 并且 **a本身的栈地址被弹出去了 相当于擦了**
+然后执行 Hack() **b的栈地址会把a的地址覆盖掉**
+所以 p指针就不会拿到语义上想要的内容了
+## 栈数组:
+栈之中最常见的就是栈数组,下面是一些值得注意的点
+
+1.栈数组不能使用常量赋值长度 
+比如 int a = 10 ; int array[a];
+
+2.栈数组没有原生长度等方法
+只能length = sizeof(array)/sizeof(array[0]) (或者sizeof其类型)
+
+3.栈数组在函数传递的时候会退化指针 就不会拿到我们想要的长度信息了
+
+![](Pasted-image-20260711101131.png)
 
 # 3.堆
+	堆的管理方式是通过堆管理器
+	它在进程的虚拟地址空间中是逻辑上连续（物理上可离散）的内存区域，从低地址向高地址增长
+	Windows 默认堆大小不固定，每个进程有自己独立的默认堆，但同一进程内的所有线程共享该堆
 
+![](Pasted-image-20260711102844.png "490")
 
 # 4.全局/静态存储区
 
@@ -64,11 +92,11 @@ BSS = **Block Started by Symbol** 由符号开始的块
 举例:
 A.cpp
 
-![Pasted image 20260711061022](Pasted-image-20260711061022.png)
+![](Pasted-image-20260711061022.png "338")
 
 B.cpp
 
-![Pasted image 20260711061033](Pasted-image-20260711061033.png)
+![](Pasted-image-20260711061033.png "272")
 
 结果: 10 + 1 = 11
 # 8.弃用
