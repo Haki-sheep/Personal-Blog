@@ -59,6 +59,105 @@ class PublishResult:
     message: str
 
 
+@dataclass
+class PostInfo:
+    title: str
+    slug: str
+    category: str
+    subcategory: str
+    date: str
+    path: Path
+
+
+def category_label(slug: str) -> str:
+    for item_slug, label in CATEGORIES:
+        if item_slug == slug:
+            return label
+    return slug or "(未设置)"
+
+
+def subcategory_label(slug: str) -> str:
+    for item_slug, label in SUBCATEGORIES:
+        if item_slug == slug:
+            return label
+    return slug or "(未设置)"
+
+
+def posts_root(blog_root: Path) -> Path:
+    return blog_root / "content" / "post"
+
+
+def list_posts(blog_root: Path) -> list[PostInfo]:
+    """扫描 content/post 下全部文章"""
+    root = posts_root(blog_root)
+    if not root.is_dir():
+        return []
+
+    posts: list[PostInfo] = []
+    for index_path in sorted(root.glob("*/index.md")):
+        meta, _ = parse_frontmatter(index_path.read_text(encoding="utf-8"))
+        folder_slug = index_path.parent.name
+        posts.append(
+            PostInfo(
+                title=first_value(meta, "title", default=folder_slug),
+                slug=first_value(meta, "slug", default=folder_slug),
+                category=first_value(meta, "category", "categories"),
+                subcategory=first_value(meta, "subcategory", "subcategories"),
+                date=first_value(meta, "date"),
+                path=index_path,
+            )
+        )
+
+    posts.sort(key=lambda item: item.date or "", reverse=True)
+    return posts
+
+
+def delete_post(blog_root: Path, slug: str) -> Path:
+    """删除整篇文章目录"""
+    dest_dir = posts_root(blog_root) / slug
+    if not dest_dir.is_dir():
+        raise FileNotFoundError(f"文章不存在: {dest_dir}")
+    shutil.rmtree(dest_dir)
+    return dest_dir
+
+
+def update_post_category(blog_root: Path, slug: str, category: str, subcategory: str) -> Path:
+    """只改 frontmatter 里的栏目和子栏目"""
+    if not category:
+        raise ValueError("请选择栏目")
+    if not subcategory:
+        raise ValueError("请选择子栏目")
+
+    index_path = posts_root(blog_root) / slug / "index.md"
+    if not index_path.is_file():
+        raise FileNotFoundError(f"文章不存在: {index_path}")
+
+    raw_text = index_path.read_text(encoding="utf-8")
+    meta, body = parse_frontmatter(raw_text)
+    if not meta:
+        raise ValueError(f"无法解析 frontmatter: {index_path}")
+
+    title = first_value(meta, "title", default=slug)
+    post_date = first_value(meta, "date", default=now_china_iso())
+    tags = first_list(meta, "tags")
+    cover = first_value(meta, "cover", "image")
+
+    options = PublishOptions(
+        source_dir=index_path.parent,
+        blog_root=blog_root,
+        title=title,
+        slug=first_value(meta, "slug", default=slug),
+        category=category,
+        subcategory=subcategory,
+        tags=tags,
+        cover=cover,
+        post_date=post_date,
+    )
+    output = render_hugo_frontmatter(options) + "\n" + body.strip() + "\n"
+    index_path.write_text(output, encoding="utf-8")
+    return index_path
+
+
 def blog_root_from_here() -> Path:
     return Path(__file__).resolve().parent.parent
 
