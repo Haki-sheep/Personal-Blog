@@ -1,9 +1,9 @@
 ---
 title: Cpp指针
-date: 2026-07-13T10:34:56+08:00
+date: 2026-07-13T10:36:48+08:00
 slug: cpp
 categories:
-    - csharp
+    - cpp
 subcategories:
     - basic
 ---
