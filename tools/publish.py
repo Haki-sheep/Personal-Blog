@@ -221,10 +221,40 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
 
 
 def slugify(value: str) -> str:
-    normalized = unicodedata.normalize("NFKD", value)
-    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
-    slug = re.sub(r"[^a-zA-Z0-9]+", "-", ascii_text.lower()).strip("-")
-    return slug
+    """生成 URL slug 保留中文 避免 Cpp基础/Cpp指针 都塌成 cpp"""
+    text = unicodedata.normalize("NFKC", (value or "").strip())
+    if not text:
+        return ""
+
+    # 保留字母数字下划线中文 其余变连字符
+    slug = re.sub(r"[^\w]+", "-", text, flags=re.UNICODE)
+    slug = re.sub(r"_+", "-", slug)
+    slug = re.sub(r"-{2,}", "-", slug).strip("-")
+
+    # 仅把 ASCII 字母转小写 中文保持原样
+    chars: list[str] = []
+    for ch in slug:
+        if "A" <= ch <= "Z":
+            chars.append(ch.lower())
+        else:
+            chars.append(ch)
+    return "".join(chars)
+
+
+def ensure_unique_slug(blog_root: Path, slug: str, title: str) -> None:
+    """若同 slug 已有不同标题的文章 则拒绝覆盖"""
+    index_path = posts_root(blog_root) / slug / "index.md"
+    if not index_path.is_file():
+        return
+
+    meta, _ = parse_frontmatter(index_path.read_text(encoding="utf-8"))
+    existing_title = first_value(meta, "title")
+    if existing_title and existing_title != title:
+        raise ValueError(
+            f"slug「{slug}」已被文章「{existing_title}」占用\n"
+            f"当前要发布的是「{title}」\n"
+            f"请换一个 slug 再发布 避免互相覆盖"
+        )
 
 
 def normalize_list(value) -> list[str]:
@@ -260,7 +290,15 @@ def detect_from_source(source_dir: Path) -> dict:
     meta, _ = parse_frontmatter(md_path.read_text(encoding="utf-8"))
 
     title = first_value(meta, "title", default=md_path.stem)
-    slug = first_value(meta, "slug", default=slugify(title) or slugify(source_dir.name) or source_dir.name.lower())
+    # 优先用笔记文件夹名生成 slug 区分度更高
+    slug = first_value(meta, "slug")
+    if not slug:
+        slug = (
+            slugify(source_dir.name)
+            or slugify(title)
+            or slugify(md_path.stem)
+            or "post"
+        )
     category = first_value(meta, "category", "categories")
     subcategory = first_value(meta, "subcategory", "subcategories")
     cover = first_value(meta, "cover", "image")
@@ -443,6 +481,7 @@ def validate_options(options: PublishOptions) -> None:
 
 def publish_article(options: PublishOptions) -> PublishResult:
     validate_options(options)
+    ensure_unique_slug(options.blog_root, options.slug, options.title)
 
     md_path = find_markdown_file(options.source_dir)
     raw_text = md_path.read_text(encoding="utf-8")
