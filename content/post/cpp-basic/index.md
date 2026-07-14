@@ -1,7 +1,7 @@
 ---
 title: Cpp基础
-date: 2026-07-15T06:42:29+08:00
-slug: cpp基础
+date: 2026-07-15T06:49:52+08:00
+slug: cpp-basic
 categories:
     - cpp
 subcategories:

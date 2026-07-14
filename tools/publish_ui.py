@@ -208,7 +208,7 @@ class PublishApp:
             return
 
         try:
-            detected = detect_from_source(Path(source))
+            detected = detect_from_source(Path(source), self.blog_root)
         except Exception as exc:
             messagebox.showerror("读取失败", str(exc))
             return

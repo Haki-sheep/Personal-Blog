@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import re
 import shutil
 import unicodedata
@@ -220,25 +221,50 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
     return meta, body.lstrip("\r\n")
 
 
+# 常见中文词转写 方便生成稳定英文 slug
+CN_SLUG_WORDS = {
+    "基础": "basic",
+    "指针": "pointer",
+    "进阶": "advanced",
+    "入门": "intro",
+    "原理": "principle",
+    "笔记": "notes",
+}
+
+
 def slugify(value: str) -> str:
-    """生成 URL slug 保留中文 避免 Cpp基础/Cpp指针 都塌成 cpp"""
+    """生成纯 ASCII slug 避免中文路径在 GitHub Pages 上 404"""
     text = unicodedata.normalize("NFKC", (value or "").strip())
     if not text:
         return ""
 
-    # 保留字母数字下划线中文 其余变连字符
-    slug = re.sub(r"[^\w]+", "-", text, flags=re.UNICODE)
-    slug = re.sub(r"_+", "-", slug)
-    slug = re.sub(r"-{2,}", "-", slug).strip("-")
+    for cn, en in CN_SLUG_WORDS.items():
+        text = text.replace(cn, f"-{en}-")
 
-    # 仅把 ASCII 字母转小写 中文保持原样
-    chars: list[str] = []
-    for ch in slug:
-        if "A" <= ch <= "Z":
-            chars.append(ch.lower())
-        else:
-            chars.append(ch)
-    return "".join(chars)
+    ascii_part = (
+        unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    )
+    ascii_slug = re.sub(r"[^a-zA-Z0-9]+", "-", ascii_part).strip("-").lower()
+    ascii_slug = re.sub(r"-{2,}", "-", ascii_slug)
+
+    # 若仍有未映射中文 追加短哈希保证唯一且可上线
+    original = unicodedata.normalize("NFKC", (value or "").strip())
+    remain_non_ascii = any(ord(ch) > 127 for ch in original)
+    mapped = original
+    for cn, _en in CN_SLUG_WORDS.items():
+        mapped = mapped.replace(cn, "")
+    still_non_ascii = any(ord(ch) > 127 for ch in mapped)
+
+    if still_non_ascii:
+        digest = hashlib.md5(original.encode("utf-8")).hexdigest()[:6]
+        base = ascii_slug or "post"
+        return f"{base}-{digest}"
+
+    if remain_non_ascii and not ascii_slug:
+        digest = hashlib.md5(original.encode("utf-8")).hexdigest()[:6]
+        return f"post-{digest}"
+
+    return ascii_slug
 
 
 def ensure_unique_slug(blog_root: Path, slug: str, title: str) -> None:
@@ -285,13 +311,25 @@ def first_list(meta: dict, *keys) -> list[str]:
     return []
 
 
-def detect_from_source(source_dir: Path) -> dict:
+def find_slug_by_title(blog_root: Path, title: str) -> str:
+    """已有同名文章时复用其 slug 避免重复发布出第二份"""
+    title = (title or "").strip()
+    if not title:
+        return ""
+    for post in list_posts(blog_root):
+        if post.title == title:
+            return post.slug
+    return ""
+
+
+def detect_from_source(source_dir: Path, blog_root: Path | None = None) -> dict:
     md_path = find_markdown_file(source_dir)
     meta, _ = parse_frontmatter(md_path.read_text(encoding="utf-8"))
 
     title = first_value(meta, "title", default=md_path.stem)
-    # 优先用笔记文件夹名生成 slug 区分度更高
     slug = first_value(meta, "slug")
+    if not slug and blog_root is not None:
+        slug = find_slug_by_title(blog_root, title)
     if not slug:
         slug = (
             slugify(source_dir.name)
@@ -543,7 +581,7 @@ def main() -> int:
     args = parser.parse_args()
 
     source_dir = Path(args.source).expanduser().resolve()
-    detected = detect_from_source(source_dir)
+    detected = detect_from_source(source_dir, Path(args.blog_root).resolve())
 
     options = PublishOptions(
         source_dir=source_dir,

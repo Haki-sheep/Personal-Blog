@@ -1,7 +1,7 @@
 ---
 title: Cpp指针
 date: 2026-07-15T06:35:34+08:00
-slug: cpp基础-指针
+slug: cpp-pointer
 categories:
     - cpp
 subcategories:

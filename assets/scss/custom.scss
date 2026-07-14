@@ -492,7 +492,17 @@ body.template-home .site-footer {
     margin-top: 12px;
 }
 
-/* 文章内图片 强制左右留白 可点开放大 无图注 */
+/* 目录列表去掉默认圆点方块 标题跳级时不再冒奇怪符号 */
+.toc-nav {
+    ul,
+    ol {
+        list-style: none;
+    }
+
+    li::marker {
+        content: "";
+    }
+}
 .article-content {
     .gallery {
         justify-content: center;
