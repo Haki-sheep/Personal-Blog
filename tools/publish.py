@@ -396,17 +396,41 @@ def collect_note_image_refs(body: str) -> list[str]:
 
 
 def resolve_source_image(source_dir: Path, note_name: str) -> Path:
-    """按笔记里的文件名找图 找不到再尝试去空格名"""
-    direct = source_dir / note_name
-    if direct.is_file():
-        return direct
+    """按笔记文件名找图 支持图片在子文件夹(如 图片/1.1/)"""
+    raw_name = note_name.strip().replace("\\", "/")
+    basename = Path(raw_name).name
+    safe_name = sanitize_image_name(basename)
 
-    safe_name = sanitize_image_name(note_name)
-    fallback = source_dir / safe_name
-    if fallback.is_file():
-        return fallback
+    direct_candidates = [
+        source_dir / raw_name,
+        source_dir / basename,
+        source_dir / safe_name,
+    ]
+    for candidate in direct_candidates:
+        if candidate.is_file():
+            return candidate
 
-    raise FileNotFoundError(f"图片不存在: {direct}")
+    matches: list[Path] = []
+    for path in source_dir.rglob("*"):
+        if not path.is_file():
+            continue
+        if path.name == basename or path.name == safe_name:
+            matches.append(path)
+
+    if not matches:
+        raise FileNotFoundError(
+            f"图片不存在: {basename}\n已在整个笔记文件夹递归查找: {source_dir}"
+        )
+
+    if len(matches) == 1:
+        return matches[0]
+
+    preferred_dirs = {"图片", "attachments", "assets", "imgs", "images", "media"}
+    preferred = [path for path in matches if preferred_dirs.intersection(path.parts)]
+    pool = preferred or matches
+    # 路径更短优先 其次较新文件
+    pool.sort(key=lambda path: (len(path.parts), -path.stat().st_mtime))
+    return pool[0]
 
 
 def convert_body_images(body: str, rename_map: dict[str, str]) -> str:
