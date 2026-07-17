@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
 import shutil
 import unicodedata
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from typing import Any
 
 CHINA_TZ = timezone(timedelta(hours=8))
 
@@ -38,6 +40,34 @@ SUBCATEGORIES = [
     ("basic", "基础"),
     ("advanced", "进阶"),
 ]
+
+# Obsidian 库顶层文件夹名 -> 栏目 slug
+FOLDER_TO_CATEGORY = {
+    "Cpp": "cpp",
+    "C++": "cpp",
+    "CSharp": "csharp",
+    "C#": "csharp",
+    "CS": "csharp",
+    "Unity": "unity",
+    "UE": "ue",
+    "Unreal": "ue",
+    "OpenGL": "opengl",
+    "Math": "math",
+    "DSA": "dsa",
+    "Tools": "tools",
+}
+
+FOLDER_TO_SUBCATEGORY = {
+    "基础": "basic",
+    "basic": "basic",
+    "Basic": "basic",
+    "进阶": "advanced",
+    "advanced": "advanced",
+    "Advanced": "advanced",
+}
+
+IMAGE_DIR_NAMES = {"图片", "attachments", "assets", "imgs", "images", "media"}
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"}
 
 
 @dataclass
@@ -68,6 +98,18 @@ class PostInfo:
     subcategory: str
     date: str
     path: Path
+
+
+@dataclass
+class NoteScanItem:
+    source_dir: Path
+    title: str
+    slug: str
+    category: str
+    subcategory: str
+    fingerprint: str
+    status: str  # new / changed / unchanged / skipped
+    rel_path: str
 
 
 def category_label(slug: str) -> str:
@@ -111,6 +153,311 @@ def list_posts(blog_root: Path) -> list[PostInfo]:
 
     posts.sort(key=lambda item: item.date or "", reverse=True)
     return posts
+
+
+def publish_state_path(blog_root: Path) -> Path:
+    return blog_root / "tools" / ".publish-state.json"
+
+
+def load_publish_state(blog_root: Path) -> dict[str, Any]:
+    path = publish_state_path(blog_root)
+    if not path.is_file():
+        return {"notes": {}}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {"notes": {}}
+    if not isinstance(data, dict):
+        return {"notes": {}}
+    data.setdefault("notes", {})
+    return data
+
+
+def save_publish_state(blog_root: Path, state: dict[str, Any]) -> None:
+    path = publish_state_path(blog_root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def note_state_key(source_dir: Path) -> str:
+    return str(source_dir.resolve())
+
+
+def find_vault_root(note_dir: Path) -> Path | None:
+    """从笔记目录向上找 Obsidian 库根(含子栏目顶层文件夹)"""
+    known = set(FOLDER_TO_CATEGORY.keys())
+    current = note_dir.resolve()
+    for parent in [current, *current.parents]:
+        try:
+            children = {child.name for child in parent.iterdir() if child.is_dir()}
+        except OSError:
+            continue
+        if children & known:
+            return parent
+    return None
+
+
+def infer_taxonomy(note_dir: Path, vault_root: Path | None = None) -> tuple[str, str]:
+    """根据 Obsidian 路径推断栏目/子栏目"""
+    vault = vault_root or find_vault_root(note_dir)
+    if vault is None:
+        return "", "basic"
+
+    try:
+        parts = note_dir.resolve().relative_to(vault.resolve()).parts
+    except ValueError:
+        return "", "basic"
+
+    if not parts:
+        return "", "basic"
+
+    category = FOLDER_TO_CATEGORY.get(parts[0], "")
+    subcategory = "basic"
+
+    if len(parts) >= 2 and parts[1] in FOLDER_TO_SUBCATEGORY:
+        subcategory = FOLDER_TO_SUBCATEGORY[parts[1]]
+
+    return category, subcategory
+
+
+def discover_note_dirs(vault_root: Path) -> list[Path]:
+    """扫描库中所有含 md 的笔记文件夹"""
+    vault_root = vault_root.resolve()
+    if not vault_root.is_dir():
+        raise FileNotFoundError(f"Obsidian 库不存在: {vault_root}")
+
+    found: set[Path] = set()
+    for md_path in vault_root.rglob("*.md"):
+        parent = md_path.parent
+        if parent.name in IMAGE_DIR_NAMES:
+            continue
+        if any(part in IMAGE_DIR_NAMES for part in parent.parts):
+            # 图片目录里的 md 忽略
+            if parent.name in IMAGE_DIR_NAMES:
+                continue
+        # 只收「目录内直接有 md」的笔记夹
+        found.add(parent)
+
+    # 排除库根本身 以及纯栏目/子栏目容器(没有直接 md 的已自然排除)
+    notes = []
+    for path in sorted(found):
+        if path == vault_root:
+            continue
+        if not list(path.glob("*.md")):
+            continue
+        notes.append(path)
+    return notes
+
+
+def note_fingerprint(source_dir: Path) -> str:
+    """笔记正文 + 图片元信息指纹 用于判断是否变更"""
+    md_path = find_markdown_file(source_dir)
+    digest = hashlib.md5()
+    digest.update(md_path.read_bytes())
+
+    image_files = [
+        path
+        for path in source_dir.rglob("*")
+        if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
+    ]
+    for path in sorted(image_files, key=lambda item: str(item.relative_to(source_dir)).lower()):
+        stat = path.stat()
+        digest.update(str(path.relative_to(source_dir)).encode("utf-8", errors="replace"))
+        digest.update(str(stat.st_size).encode("ascii"))
+        digest.update(str(stat.st_mtime_ns).encode("ascii"))
+
+    return digest.hexdigest()
+
+
+def resolve_note_publish_meta(
+    source_dir: Path,
+    blog_root: Path,
+    vault_root: Path | None = None,
+    state: dict[str, Any] | None = None,
+) -> dict[str, str]:
+    """综合路径推断、已发布文章、同步状态 得到发布元数据"""
+    detected = detect_from_source(source_dir, blog_root)
+    path_category, path_subcategory = infer_taxonomy(source_dir, vault_root)
+
+    key = note_state_key(source_dir)
+    saved = ((state or {}).get("notes") or {}).get(key) or {}
+
+    existing = None
+    needle = normalize_title(detected["title"])
+    for post in list_posts(blog_root):
+        if normalize_title(post.title) == needle or post.slug == detected["slug"]:
+            existing = post
+            break
+        if saved.get("slug") and post.slug == saved.get("slug"):
+            existing = post
+            break
+
+    category = (
+        detected["category"]
+        or (existing.category if existing else "")
+        or saved.get("category", "")
+        or path_category
+    )
+    subcategory = (
+        detected["subcategory"]
+        or (existing.subcategory if existing else "")
+        or saved.get("subcategory", "")
+        or path_subcategory
+        or "basic"
+    )
+    slug = detected["slug"] or saved.get("slug", "") or (existing.slug if existing else "")
+    if not slug:
+        slug = slugify(source_dir.name) or slugify(detected["title"]) or "post"
+    if slug.startswith("post-") and category:
+        slug = f"{category}-{slug[5:]}"
+
+    # 更新已有文章时保留原日期
+    post_date = detected["date"]
+    if existing and existing.date:
+        post_date = existing.date
+
+    return {
+        "title": detected["title"],
+        "slug": slug,
+        "category": category,
+        "subcategory": subcategory,
+        "cover": detected["cover"],
+        "date": post_date,
+        "tags": ",".join(detected["tags"]),
+        "markdown_file": detected["markdown_file"],
+    }
+
+
+def scan_vault_notes(
+    vault_root: Path,
+    blog_root: Path,
+    only_changed: bool = False,
+) -> list[NoteScanItem]:
+    """扫描库内笔记并标记 new/changed/unchanged"""
+    state = load_publish_state(blog_root)
+    items: list[NoteScanItem] = []
+
+    for source_dir in discover_note_dirs(vault_root):
+        try:
+            meta = resolve_note_publish_meta(source_dir, blog_root, vault_root, state)
+            fingerprint = note_fingerprint(source_dir)
+        except Exception:
+            rel = str(source_dir)
+            try:
+                rel = str(source_dir.relative_to(vault_root))
+            except ValueError:
+                pass
+            items.append(
+                NoteScanItem(
+                    source_dir=source_dir,
+                    title=source_dir.name,
+                    slug="",
+                    category="",
+                    subcategory="",
+                    fingerprint="",
+                    status="skipped",
+                    rel_path=rel,
+                )
+            )
+            continue
+
+        key = note_state_key(source_dir)
+        saved = (state.get("notes") or {}).get(key) or {}
+        published = posts_root(blog_root) / meta["slug"] / "index.md"
+
+        if not published.is_file() and not saved:
+            status = "new"
+        elif saved.get("fingerprint") == fingerprint and published.is_file():
+            status = "unchanged"
+        else:
+            status = "changed"
+
+        try:
+            rel_path = str(source_dir.relative_to(vault_root))
+        except ValueError:
+            rel_path = str(source_dir)
+
+        items.append(
+            NoteScanItem(
+                source_dir=source_dir,
+                title=meta["title"],
+                slug=meta["slug"],
+                category=meta["category"],
+                subcategory=meta["subcategory"],
+                fingerprint=fingerprint,
+                status=status,
+                rel_path=rel_path,
+            )
+        )
+
+    if only_changed:
+        items = [item for item in items if item.status in {"new", "changed"}]
+
+    status_rank = {"changed": 0, "new": 1, "skipped": 2, "unchanged": 3}
+    items.sort(key=lambda item: (status_rank.get(item.status, 9), item.rel_path.lower()))
+    return items
+
+
+def sync_note(
+    item: NoteScanItem,
+    blog_root: Path,
+    vault_root: Path | None = None,
+) -> PublishResult:
+    """同步单篇笔记到博客 并写入指纹状态"""
+    state = load_publish_state(blog_root)
+    meta = resolve_note_publish_meta(item.source_dir, blog_root, vault_root, state)
+    tags = [part.strip() for part in meta["tags"].split(",") if part.strip()]
+
+    options = PublishOptions(
+        source_dir=item.source_dir,
+        blog_root=blog_root,
+        title=meta["title"],
+        slug=meta["slug"],
+        category=meta["category"],
+        subcategory=meta["subcategory"],
+        tags=tags,
+        cover=meta["cover"],
+        post_date=meta["date"],
+    )
+    result = publish_article(options)
+
+    fingerprint = note_fingerprint(item.source_dir)
+    notes = state.setdefault("notes", {})
+    notes[note_state_key(item.source_dir)] = {
+        "slug": result.slug,
+        "title": meta["title"],
+        "category": meta["category"],
+        "subcategory": meta["subcategory"],
+        "fingerprint": fingerprint,
+        "rel_path": item.rel_path,
+        "synced_at": now_china_iso(),
+    }
+    save_publish_state(blog_root, state)
+    return result
+
+
+def sync_changed_notes(
+    vault_root: Path,
+    blog_root: Path,
+    only_changed: bool = True,
+) -> tuple[list[PublishResult], list[str]]:
+    """批量同步 默认只处理新增和变更"""
+    items = scan_vault_notes(vault_root, blog_root, only_changed=only_changed)
+    results: list[PublishResult] = []
+    errors: list[str] = []
+
+    for item in items:
+        if item.status == "skipped":
+            errors.append(f"{item.rel_path}: 跳过(无法读取)")
+            continue
+        if only_changed and item.status == "unchanged":
+            continue
+        try:
+            results.append(sync_note(item, blog_root, vault_root))
+        except Exception as exc:
+            errors.append(f"{item.rel_path}: {exc}")
+
+    return results, errors
 
 
 def delete_post(blog_root: Path, slug: str) -> Path:
@@ -311,13 +658,17 @@ def first_list(meta: dict, *keys) -> list[str]:
     return []
 
 
+def normalize_title(value: str) -> str:
+    return re.sub(r"\s+", "", (value or "").strip()).lower()
+
+
 def find_slug_by_title(blog_root: Path, title: str) -> str:
     """已有同名文章时复用其 slug 避免重复发布出第二份"""
-    title = (title or "").strip()
-    if not title:
+    needle = normalize_title(title)
+    if not needle:
         return ""
     for post in list_posts(blog_root):
-        if post.title == title:
+        if normalize_title(post.title) == needle:
             return post.slug
     return ""
 
@@ -339,6 +690,11 @@ def detect_from_source(source_dir: Path, blog_root: Path | None = None) -> dict:
         )
     category = first_value(meta, "category", "categories")
     subcategory = first_value(meta, "subcategory", "subcategories")
+    path_category, path_subcategory = infer_taxonomy(source_dir)
+    if not category:
+        category = path_category
+    if not subcategory:
+        subcategory = path_subcategory
     cover = first_value(meta, "cover", "image")
     post_date = first_value(meta, "date", default=now_china_iso())
     tags = first_list(meta, "tags")

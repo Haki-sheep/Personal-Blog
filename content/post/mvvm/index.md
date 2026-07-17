@@ -5,7 +5,7 @@ slug: mvvm
 categories:
     - csharp
 subcategories:
-    - advanced
+    - basic
 ---
 
 # 1.作用

@@ -6,3 +6,7 @@ assets/jsconfig.json
 _vendor
 **/__pycache__/
 *.py[cod]
+tools/.publish-state.json
+tools/.publish-config.json
+tools/_*.txt
+tools/_*.py
